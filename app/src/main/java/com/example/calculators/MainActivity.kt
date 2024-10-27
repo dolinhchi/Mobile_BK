@@ -1,9 +1,10 @@
 package com.example.calculators
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
-import android.widget.Button
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
@@ -11,11 +12,30 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     // Display result
     lateinit var textResult: TextView
 
-    // State and operator variablesgit remote add origin git@github.com:dolinhchi/Mobile_BK.git
+    // State and operator variables
     var state: Int = 1
     var op: Int = 0
     var op1: Int = 0
     var op2: Int = 0
+
+    // Currency conversion variables
+    private lateinit var etSourceAmount: EditText
+    private lateinit var etDestinationAmount: EditText
+    private lateinit var spnSourceCurrency: Spinner
+    private lateinit var spnDestinationCurrency: Spinner
+
+   private val exchangeRates = mapOf(
+    Pair("USD", "EUR") to 0.85,
+    Pair("EUR", "USD") to 1.18,
+    Pair("USD", "VND") to 23000.0,
+    Pair("VND", "USD") to 0.000043,
+    Pair("USD", "JPY") to 110.0,
+    Pair("JPY", "USD") to 0.0091,
+    Pair("USD", "CNY") to 6.45,
+    Pair("CNY", "USD") to 0.16,
+    Pair("USD", "KRW") to 1180.0,
+    Pair("KRW", "USD") to 0.00085
+)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +65,41 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         findViewById<Button>(R.id.btnBS).setOnClickListener(this)
         findViewById<Button>(R.id.btnDot).setOnClickListener(this)
         findViewById<Button>(R.id.btnPlusMinus).setOnClickListener(this)
+
+        // Initialize currency conversion UI elements
+        etSourceAmount = findViewById(R.id.et_sourceAmount)
+        etDestinationAmount = findViewById(R.id.et_destinationAmount)
+        spnSourceCurrency = findViewById(R.id.spn_sourceCurrency)
+        spnDestinationCurrency = findViewById(R.id.spn_destinationCurrency)
+
+        val currencies = arrayOf("USD", "EUR", "VND", "JPY", "CNY", "KRW")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, currencies)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spnSourceCurrency.adapter = adapter
+        spnDestinationCurrency.adapter = adapter
+
+        // TextWatcher for source amount
+        etSourceAmount.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) = convertCurrency()
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        spnSourceCurrency.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                convertCurrency()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        spnDestinationCurrency.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                convertCurrency()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
 
     override fun onClick(p0: View?) {
@@ -151,5 +206,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         op1 = 0
         op2 = 0
         op = 0
+    }
+
+    // Convert currency based on selected rates
+    private fun convertCurrency() {
+        val sourceAmount = etSourceAmount.text.toString().toDoubleOrNull() ?: return
+        val sourceCurrency = spnSourceCurrency.selectedItem.toString()
+        val destinationCurrency = spnDestinationCurrency.selectedItem.toString()
+
+        val rate = exchangeRates[Pair(sourceCurrency, destinationCurrency)] ?: 1.0
+        val convertedAmount = sourceAmount * rate
+        etDestinationAmount.setText(convertedAmount.toString())
     }
 }
